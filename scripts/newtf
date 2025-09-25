@@ -1,0 +1,277 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# newtf: scaffold a GPU-enabled TensorFlow devcontainer project quickly
+# Usage:
+#   newtf <project-name>               # uses your prebuilt image (fastest)
+#   newtf --build <project-name>       # builds locally (slower first time)
+
+BUILD=false
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --build)
+      BUILD=true; shift ;;
+    -h|--help)
+      echo "Usage: newtf [--build] <project-name>" >&2
+      echo "  Default: uses ghcr.io/snaetwarre/tf-gpu-dev:latest (fastest)" >&2
+      echo "  --build: creates local Dockerfile (slower first time)" >&2
+      exit 0 ;;
+    --) shift; break ;;
+    -*) echo "Unknown option: $1" >&2; exit 1 ;;
+    *) POSITIONAL+=("$1"); shift ;;
+  esac
+done
+
+set -- "${POSITIONAL[@]}"
+if [ $# -lt 1 ]; then
+  echo "Usage: newtf [--build] <project-name>" >&2
+  exit 1
+fi
+
+NAME="$1"
+DEST="$(pwd)/$NAME"
+
+if [ -e "$DEST" ]; then
+  echo "Error: $DEST already exists" >&2
+  exit 1
+fi
+
+mkdir -p "$DEST/.devcontainer"
+
+if [ "$BUILD" = true ]; then
+  cat > "$DEST/.devcontainer/devcontainer.json" <<'JSON'
+{
+  "name": "TensorFlow GPU Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "runArgs": ["--runtime", "nvidia", "--gpus", "all", "--shm-size=1g"],
+  "hostRequirements": { "gpu": true },
+  "containerEnv": { "TF_CPP_MIN_LOG_LEVEL": "2" },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  },
+  "remoteUser": "root"
+}
+JSON
+
+  cat > "$DEST/.devcontainer/Dockerfile" <<'DOCKER'
+FROM tensorflow/tensorflow:latest-gpu-jupyter
+
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    TF_CPP_MIN_LOG_LEVEL=2
+
+RUN python -m pip install --upgrade pip && \
+    pip install --no-cache-dir --upgrade --upgrade-strategy only-if-needed \
+      "tensorflow[and-cuda]==2.20.*" \
+      ipykernel matplotlib seaborn pandas scipy
+
+WORKDIR /workspaces
+DOCKER
+else
+  cat > "$DEST/.devcontainer/devcontainer.json" <<'JSON'
+{
+  "name": "TensorFlow GPU Dev Container",
+  "image": "ghcr.io/snaetwarre/tf-gpu-dev:latest",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "runArgs": ["--runtime", "nvidia", "--gpus", "all", "--shm-size=1g"],
+  "hostRequirements": { "gpu": true },
+  "containerEnv": { "TF_CPP_MIN_LOG_LEVEL": "2" },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  },
+  "remoteUser": "root"
+}
+JSON
+fi
+
+# Neural network quickstart notebook
+cat > "$DEST/neural_networks_quickstart.ipynb" <<'NB'
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {"language": "markdown"},
+      "source": [
+        "# TensorFlow GPU Neural Networks Quickstart",
+        "",
+        "Test your GPU setup and build a simple neural network."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {"language": "python"},
+      "source": [
+        "import tensorflow as tf",
+        "import numpy as np",
+        "import matplotlib.pyplot as plt",
+        "",
+        "print('TensorFlow version:', tf.__version__)",
+        "print('GPU available:', tf.config.list_physical_devices('GPU'))",
+        "",
+        "# Enable memory growth to avoid allocating all GPU memory at once",
+        "gpus = tf.config.list_physical_devices('GPU')",
+        "for gpu in gpus:",
+        "    tf.config.experimental.set_memory_growth(gpu, True)"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {"language": "python"},
+      "source": [
+        "# Test GPU with a simple matrix multiplication",
+        "with tf.device('/GPU:0' if gpus else '/CPU:0'):",
+        "    a = tf.random.uniform((1000, 1000))",
+        "    b = tf.random.uniform((1000, 1000))",
+        "    c = tf.matmul(a, b)",
+        "",
+        "print(f'Matrix multiplication completed on: {c.device}')",
+        "print(f'Result shape: {c.shape}')"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {"language": "python"},
+      "source": [
+        "# Create a simple neural network for classification",
+        "# Generate some dummy data",
+        "X = np.random.randn(1000, 20).astype(np.float32)",
+        "y = (X.sum(axis=1) > 0).astype(np.int32)",
+        "",
+        "print(f'Data shape: {X.shape}')",
+        "print(f'Labels shape: {y.shape}')",
+        "print(f'Positive examples: {y.sum()}/{len(y)}')"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {"language": "python"},
+      "source": [
+        "# Build a simple feedforward neural network",
+        "model = tf.keras.Sequential([",
+        "    tf.keras.layers.Dense(64, activation='relu', input_shape=(20,)),",
+        "    tf.keras.layers.Dropout(0.2),",
+        "    tf.keras.layers.Dense(32, activation='relu'),",
+        "    tf.keras.layers.Dense(1, activation='sigmoid')",
+        "])",
+        "",
+        "model.compile(",
+        "    optimizer='adam',",
+        "    loss='binary_crossentropy',",
+        "    metrics=['accuracy']",
+        ")",
+        "",
+        "model.summary()"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {"language": "python"},
+      "source": [
+        "# Train the model",
+        "history = model.fit(",
+        "    X, y,",
+        "    epochs=20,",
+        "    batch_size=32,",
+        "    validation_split=0.2,",
+        "    verbose=1",
+        ")"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {"language": "python"},
+      "source": [
+        "# Plot training history",
+        "plt.figure(figsize=(12, 4))",
+        "",
+        "plt.subplot(1, 2, 1)",
+        "plt.plot(history.history['loss'], label='Training Loss')",
+        "plt.plot(history.history['val_loss'], label='Validation Loss')",
+        "plt.title('Model Loss')",
+        "plt.xlabel('Epoch')",
+        "plt.ylabel('Loss')",
+        "plt.legend()",
+        "",
+        "plt.subplot(1, 2, 2)",
+        "plt.plot(history.history['accuracy'], label='Training Accuracy')",
+        "plt.plot(history.history['val_accuracy'], label='Validation Accuracy')",
+        "plt.title('Model Accuracy')",
+        "plt.xlabel('Epoch')",
+        "plt.ylabel('Accuracy')",
+        "plt.legend()",
+        "",
+        "plt.tight_layout()",
+        "plt.show()"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {"language": "python"},
+      "source": [
+        "# Make predictions",
+        "test_X = np.random.randn(10, 20).astype(np.float32)",
+        "predictions = model.predict(test_X)",
+        "",
+        "print('Sample predictions:')",
+        "for i, pred in enumerate(predictions[:5]):",
+        "    print(f'Sample {i+1}: {pred[0]:.3f} (predicted class: {int(pred[0] > 0.5)})')"
+      ]
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
+NB
+
+# Simple README
+cat > "$DEST/README.md" <<'MD'
+# TensorFlow GPU Neural Networks Project
+
+Ready-to-go TensorFlow GPU environment with neural network examples.
+
+## Quick Start
+1. Open this folder in VS Code
+2. Run: **Dev Containers: Reopen in Container**
+3. Open `neural_networks_quickstart.ipynb`
+4. Run all cells to test GPU and train a simple neural network
+
+## What's included
+- TensorFlow with GPU support
+- Jupyter notebooks
+- Common ML libraries: numpy, matplotlib, pandas, scipy, seaborn
+- GPU memory growth configured automatically
+
+## Verify GPU
+```python
+import tensorflow as tf
+print('GPUs:', tf.config.list_physical_devices('GPU'))
+```
+MD
+
+echo "🚀 Neural networks project scaffolded at $DEST"
+echo "📂 Open in VS Code and run: Dev Containers: Reopen in Container"
+echo "📓 Start with: neural_networks_quickstart.ipynb"
