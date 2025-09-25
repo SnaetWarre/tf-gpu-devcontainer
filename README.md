@@ -8,7 +8,7 @@ Zero setup, maximum speed TensorFlow environment. Your friends just clone, open 
 
 **One command to rule them all:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/snaetwarre/tf-gpu-devcontainer/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/SnaetWarre/tf-gpu-devcontainer/master/scripts/install.sh | bash
 ```
 
 Then anywhere they want to code neural networks:

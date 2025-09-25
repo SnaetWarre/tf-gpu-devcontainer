@@ -4,20 +4,16 @@
 
 **Option 1: One-line install (recommended)**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/tf-gpu-devcontainer/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/SnaetWarre/tf-gpu-devcontainer/master/scripts/install.sh | bash
 ```
 
 **Option 2: GitHub repository**
-- Push this folder to your GitHub: `https://github.com/YOUR_USERNAME/tf-gpu-devcontainer`
+- Repository is live at: `https://github.com/SnaetWarre/tf-gpu-devcontainer`
 - Tell them to clone it or use it as a template
 
 ## Next steps:
 
-1. **Push to GitHub**:
-   ```bash
-   git remote add origin https://github.com/YOUR_USERNAME/tf-gpu-devcontainer.git
-   git push -u origin main
-   ```
+1. **Repository is live**: `https://github.com/SnaetWarre/tf-gpu-devcontainer` ✅
 
 2. **Tell your friends**: "Run the one-liner above, then `newtf project-name` anywhere!"
 
@@ -30,7 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/tf-gpu-devcontainer/m
 ## What they'll do:
 ```bash
 # Install newtf
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/tf-gpu-devcontainer/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/SnaetWarre/tf-gpu-devcontainer/master/scripts/install.sh | bash
 
 # Create neural network project instantly
 newtf my-awesome-ai
