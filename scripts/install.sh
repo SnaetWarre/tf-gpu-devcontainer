@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# Compatible with bash and zsh
+set -eu
+set -o pipefail 2>/dev/null || true
 
 # Minimal installer: installs `newtf` into /usr/local/bin (or ~/.local/bin if no sudo)
 # Usage:
@@ -12,7 +14,8 @@ if ! command -v sudo >/dev/null 2>&1 || [ ! -w "$(dirname "$TARGET_DIR")" ]; the
   mkdir -p "$TARGET_DIR"
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get script directory - works in both bash and zsh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 
 install_file() {
   local src="$1"; shift
